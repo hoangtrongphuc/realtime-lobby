@@ -1,0 +1,65 @@
+{
+  "_args": [
+    [
+      {
+        "raw": "realtime-lobby@git+https://git.vgame.us:16389/phucht/realtime-lobby.git",
+        "scope": null,
+        "escapedName": "realtime-lobby",
+        "name": "realtime-lobby",
+        "rawSpec": "git+https://git.vgame.us:16389/phucht/realtime-lobby.git",
+        "spec": "https://git.vgame.us:16389/phucht/realtime-lobby.git",
+        "type": "git"
+      },
+      "/home/dev/lobby"
+    ]
+  ],
+  "_from": "git+https://git.vgame.us:16389/phucht/realtime-lobby.git",
+  "_id": "realtime-lobby@1.0.0",
+  "_inCache": true,
+  "_location": "/realtime-lobby",
+  "_phantomChildren": {},
+  "_requested": {
+    "raw": "realtime-lobby@git+https://git.vgame.us:16389/phucht/realtime-lobby.git",
+    "scope": null,
+    "escapedName": "realtime-lobby",
+    "name": "realtime-lobby",
+    "rawSpec": "git+https://git.vgame.us:16389/phucht/realtime-lobby.git",
+    "spec": "https://git.vgame.us:16389/phucht/realtime-lobby.git",
+    "type": "git"
+  },
+  "_requiredBy": [
+    "#USER",
+    "/"
+  ],
+  "_resolved": "git+https://git.vgame.us:16389/phucht/realtime-lobby.git#9efca89f2acd14d1f090fdacd9592408f9ee54fe",
+  "_shasum": "f0eaba0c035711a173754bcd7ef1ac93c176e875",
+  "_shrinkwrap": null,
+  "_spec": "realtime-lobby@git+https://git.vgame.us:16389/phucht/realtime-lobby.git",
+  "_where": "/home/dev/lobby",
+  "author": {
+    "name": "SaoNguyen"
+  },
+  "dependencies": {
+    "bluebird": "^3.5.1",
+    "deepstream.io-client-js": "^2.3.0",
+    "moment": "^2.22.1",
+    "uuid": "^3.2.1"
+  },
+  "description": "Realtime game lobby",
+  "devDependencies": {},
+  "gitHead": "9efca89f2acd14d1f090fdacd9592408f9ee54fe",
+  "keywords": [
+    "lobby",
+    "realtime"
+  ],
+  "license": "MIT",
+  "main": "index.js",
+  "name": "realtime-lobby",
+  "optionalDependencies": {},
+  "readme": "**Lobby** \n\n  * **Lobby server:** [Lobby Sever](lobby.md)\n  * **Game & Client server:** [Game](game.md)\n  * **Client:** [Client](client.md)",
+  "readmeFilename": "README.md",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "version": "1.0.0"
+}
