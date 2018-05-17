@@ -15,7 +15,7 @@ class GameServer extends Handler {
 
   onEvent(eventName, data, cb) {
     switch (eventName) {
-      case consts.EVENT.EVT_CREATE_ROOM:
+      case `${this.serverId}/${consts.EVENT.EVT_CREATE_ROOM}`:
         if (this.handler && data) {
           this.handler.onCreateRoom(data, cb);
         }
@@ -30,6 +30,9 @@ class GameServer extends Handler {
 
   onStarted(data) {
     console.log("StartedEvent: ", data);
+    this.serverId = data.serverId
+    this.addEvent(`${data.serverId}/${consts.EVENT.EVT_CREATE_ROOM}`);
+    this.addEvent(consts.EVENT.EVT_PLAYER_LOGIN);
     this.connector.broadcast(consts.EVENT.EVT_STARTTED, data);
   }
 
