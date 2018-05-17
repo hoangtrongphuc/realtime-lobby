@@ -193,7 +193,7 @@ class LobbyApi extends Handler {
               this.rooms[rid].joinRoom(uid);
               this.rooms[rid].joinRoom(fid);
               console.log(this.rooms[rid])
-              this.connector.send(consts.EVENT.EVT_CREATE_ROOM, {
+              this.connector.send(`${this.rooms[rid].serverInfo.serverId}/${consts.EVENT.EVT_CREATE_ROOM}`, {
                 rid: rid,
                 extra: {
                   map: zone || 1,
@@ -229,7 +229,7 @@ class LobbyApi extends Handler {
         this.cancelPlay({uid})
         this.coOpRoom[zone].joinRoom(uid);
         if (this.coOpRoom[zone].isFull()) {
-          this.connector.send(consts.EVENT.EVT_CREATE_ROOM, {
+       this.connector.send(`${this.coOpRoom[zone].serverInfo.serverId}/${consts.EVENT.EVT_CREATE_ROOM}`, {
             rid: this.coOpRoom[zone].rid,
             extra: {
               map: zone,
@@ -294,8 +294,7 @@ class LobbyApi extends Handler {
       waitRoom.joinRoom(uid);
       console.log('waitRoom', waitRoom)
       if (waitRoom.isFull()) {
-
-        this.connector.send(consts.EVENT.EVT_CREATE_ROOM, {
+       this.connector.send(`${waitRoom.serverInfo.serverId}/${consts.EVENT.EVT_CREATE_ROOM}`, {
           rid: waitRoom.rid,
           extra: {
             map: zone,
