@@ -9,7 +9,8 @@ class ClientInterface {
   provide(chanel, cb){}
   make(chanel, data, cb){}
   presence(chanel, data, cb){}
-
+  close(cb) {
+  }
 }
 
 module.exports = ClientInterface;
