@@ -10,6 +10,10 @@ class Connector extends Interface {
     console.log("Init Connector");
   }
 
+  close(cb) {
+    this.netClient.close(cb);
+  }
+  
   regEv(eventName, handler) {
     console.log("RegEv: ", eventName);
     let handlers = this.handlers[eventName];
