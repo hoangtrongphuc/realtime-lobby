@@ -8,9 +8,6 @@ class GameServer extends Handler {
     super(connector, opts);
     this.handler = null;
     this.connector = connector;
-    this.addEvent(consts.EVENT.EVT_CREATE_ROOM);
-    this.addEvent(consts.EVENT.EVT_PLAYER_LOGIN);
-
   }
 
   onEvent(eventName, data, cb) {
@@ -25,6 +22,11 @@ class GameServer extends Handler {
           this.handler.onPlayerLogin(data, cb);
         }
         break;
+      case `${this.serverId}/${consts.EVENT.EVT_STOPPED}`:
+        if (this.handler && data) {
+          this.handler.onStopServer(data, cb);
+        }
+        break;
     }
   }
 
@@ -32,6 +34,7 @@ class GameServer extends Handler {
     console.log("StartedEvent: ", data);
     this.serverId = data.serverId
     this.addEvent(`${data.serverId}/${consts.EVENT.EVT_CREATE_ROOM}`);
+    this.addEvent(`${data.serverId}/${consts.EVENT.EVT_STOPPED}`);
     this.addEvent(consts.EVENT.EVT_PLAYER_LOGIN);
     this.connector.broadcast(consts.EVENT.EVT_STARTTED, data);
   }
