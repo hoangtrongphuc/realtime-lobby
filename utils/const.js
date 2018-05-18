@@ -42,12 +42,16 @@ module.exports = {
       CODE: 5,
       MSG: 'The request is timeout!'
     },
-    PLAYER_CANCEL: {
+    PLAYER_INVALID: {
       CODE: 6,
+      MSG: 'Player is invalid!'
+    },
+    PLAYER_CANCEL: {
+      CODE: 7,
       MSG: 'Player cancel the request!'
     },
     SYSTEM_ERROR: {
-      CODE: 7,
+      CODE: 8,
       MSG: 'System error!'
     }
   },
