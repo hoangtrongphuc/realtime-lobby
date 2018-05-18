@@ -1,6 +1,6 @@
 'use strict';
 class Room {
-  constructor(roomId, serverInfo) {
+  constructor(roomId, serverInfo = null) {
     this.rid = roomId;
     this.players = [];
     this.roomInfo = null;
