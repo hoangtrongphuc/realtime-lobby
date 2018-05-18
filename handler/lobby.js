@@ -1,7 +1,7 @@
 'use strict';
 const uuid = require('uuid/v4');
 const Handler = require('./base');
-//const _ = require('./lodash');
+const _ = require('./lodash');
 const moment = require('moment')
 const Room = require('../logic/room');
 //const applyFilter = require('loopback-filters');
@@ -19,6 +19,10 @@ class LobbyApi extends Handler {
     this.waitRoom = {};
     this.coOpRoom = {};
     this.cancelTimeStamp = new Map();
+    setInterval(function () {
+      this.checkServerIdle(this.serverInfos)
+    }, 300000).bind(this)
+    
     this.connector.presence((uid, login) => {
       if (login) {
         console.log(uid, 'login')
@@ -81,10 +85,15 @@ class LobbyApi extends Handler {
   }
 
   checkServerIdle(serverInfos) {
+    console.log('checkServerIdle')
+    if(_.keys(serverInfos).length <= 2) return;
     for (let instanceId in serverInfos) {
       if (serverInfos.hasOwnProperty(instanceId)) {
         if (serverInfos[instanceId].countRooms == 0 && serverInfos[instanceId].countPlayers == 0) {
           this.removeServer(serverInfos[instanceId])
+          this.connector.send(`${instanceId}/${consts.EVENT.EVT_STOPPED}`, {instanceId}, (err, data) => {
+            console.log('Delete ', instanceId, data)
+          })
         }
       }
     }
