@@ -51,7 +51,7 @@ class LobbyApi extends Handler {
         utils.invoke(cb);
         break;
       case consts.EVENT.EVT_STOPPED:
-        this.removeServer(data.serverId);
+        this.removeServer(data);
         utils.invoke(cb);
         break;
       case consts.EVENT.EVT_PLAYNOW:
@@ -62,9 +62,6 @@ class LobbyApi extends Handler {
         break;
       case consts.EVENT.EVT_PLAY_COOP:
         this.playCoop(data, cb);
-        break;
-      case consts.EVENT.EVT_PLAYER_LOGIN:
-        this.getUserInfo(data, cb);
         break;
       case consts.EVENT.EVT_CHANGE_PROFILE:
         this.changeProfile(data, cb);
@@ -82,12 +79,24 @@ class LobbyApi extends Handler {
         break;
     }
   }
+
+  checkServerIdle(serverInfos) {
+    for (let instanceId in serverInfos) {
+      if (serverInfos.hasOwnProperty(instanceId)) {
+        if (serverInfos[instanceId].countRooms == 0 && serverInfos[instanceId].countPlayers == 0) {
+          this.removeServer(serverInfos[instanceId])
+        }
+      }
+    }
+  }
+
   changeProfile({uid, data}, cb) {
-  console.log('change Profile', uid, data)
+    console.log('change Profile', uid, data)
     if (data) {
       this.playerInfos[uid] = data;
     }
   }
+
   checkRoom({uid, token}, cb) {
     if (this.players[uid]) {
       let room = this.rooms[this.players[uid]];
@@ -97,7 +106,7 @@ class LobbyApi extends Handler {
       });
       return utils.invoke(cb, {check: true});
     }
-    if(this.playerInfos[uid]) {
+    if (this.playerInfos[uid]) {
       return utils.invoke(cb, consts.ERROR.PLAYER_DUPLICATE);
     }
     this.connector.send(consts.EVENT.EVT_PLAYER_LOGIN, {uid, token}, (err, data) => {
@@ -129,23 +138,24 @@ class LobbyApi extends Handler {
     }
   }
 
-  removeServer(serverId) {
-    if (this.serverInfos[serverId]) {
-      delete this.serverInfos[serverId];
+  removeServer(serverInfo) {
+    if (this.serverInfos[serverInfo.serverId]) {
+      delete this.serverInfos[serverInfo.serverId];
     }
   }
 
   playCoop(userInfo, cb) {
 
     let uid = userInfo.uid;
-    if(!this.playerInfos[uid]) return;
+    if (!this.playerInfos[uid]) return utils.invoke(cb, consts.ERROR.PLAYER_INVALID);
     let fid = userInfo.fid;
     let zone = this.playerInfos[uid].zone;
-
+    if (!zone) return utils.invoke(cb, consts.ERROR.PLAYER_INVALID);
     let timestamp = userInfo.timestamp;
 
     console.log('playCoop', userInfo, zone)
     if (fid) {
+      if (!this.playerInfos[fid]) return utils.invoke(cb, consts.ERROR.PLAYER_INVALID);
       if (uid == fid) {
         this.connector.broadcast(fid, consts.ERROR.PLAYER_DUPLICATE);
         return utils.invoke(cb, {});
@@ -216,30 +226,31 @@ class LobbyApi extends Handler {
         });
       } else {
         if (!this.coOpRoom[zone]) {
+          let rid = uuid();
+          this.coOpRoom[zone] = new Room(rid);
+          this.rooms[rid] = this.coOpRoom[zone];
+        }
+        this.cancelPlay({uid})
+        this.coOpRoom[zone].joinRoom(uid);
+        if (this.coOpRoom[zone].isFull()) {
           let serverGame = balance(userInfo, this.serverInfos)
           if (!serverGame) {
             this.connector.broadcast(uid, consts.ERROR.SERVER_NOT_FOUND);
             return utils.invoke(cb, {});
           } else {
-            let rid = uuid();
-            this.coOpRoom[zone] = new Room(rid, serverGame);
-            this.rooms[rid] = this.coOpRoom[zone];
+            this.coOpRoom[zone].serverInfo = serverGame;
+            this.connector.send(`${this.coOpRoom[zone].serverInfo.serverId}/${consts.EVENT.EVT_CREATE_ROOM}`, {
+              rid: this.coOpRoom[zone].rid,
+              extra: {
+                map: zone,
+                players: this.coOpRoom[zone].players,
+                mode: consts.GAME_MODE.COOP,
+              }
+            }, (err, roomInfo) => {
+              this.createRoom(roomInfo);
+            });
+            this.coOpRoom[zone] = null;
           }
-        }
-        this.cancelPlay({uid})
-        this.coOpRoom[zone].joinRoom(uid);
-        if (this.coOpRoom[zone].isFull()) {
-       this.connector.send(`${this.coOpRoom[zone].serverInfo.serverId}/${consts.EVENT.EVT_CREATE_ROOM}`, {
-            rid: this.coOpRoom[zone].rid,
-            extra: {
-              map: zone,
-              players: this.coOpRoom[zone].players,
-              mode: consts.GAME_MODE.COOP,
-            }
-          }, (err, roomInfo) => {
-            this.createRoom(roomInfo);
-          });
-          this.coOpRoom[zone] = null;
         }
       }
       return utils.invoke(cb, {});
@@ -249,7 +260,7 @@ class LobbyApi extends Handler {
   cancelPlay(userInfo) {
     let uid = userInfo.uid;
     let zone = null;
-    if(this.playerInfos[uid]) zone = this.playerInfos[uid].zone;
+    if (this.playerInfos[uid]) zone = this.playerInfos[uid].zone;
     if (this.players[uid] || !zone) return
 
     let timestamp = userInfo.timestamp;
@@ -266,10 +277,10 @@ class LobbyApi extends Handler {
 
   playnow(userInfo, cb) {
     let uid = userInfo.uid;
-    if(!this.playerInfos[uid]) return;
+    if (!this.playerInfos[uid]) return utils.invoke(cb, consts.ERROR.PLAYER_INVALID);
     let zone = this.playerInfos[uid].zone;
     console.log('playnow Zone', zone)
-    if (!zone) return;
+    if (!zone) return utils.invoke(cb, consts.ERROR.PLAYER_INVALID);
     if (this.players[uid]) {
       let room = this.rooms[this.players[uid]];
       this.connector.broadcast(uid, {
@@ -278,15 +289,9 @@ class LobbyApi extends Handler {
       });
     } else {
       if (!this.waitRoom[zone]) {
-        let serverGame = balance(userInfo, this.serverInfos)
-        if (!serverGame) {
-          this.connector.broadcast(uid, consts.ERROR.SERVER_NOT_FOUND);
-          return utils.invoke(cb, {});
-        } else {
-          let rid = uuid();
-          this.waitRoom[zone] = new Room(rid, serverGame);
-          this.rooms[rid] = this.waitRoom[zone];
-        }
+        let rid = uuid();
+        this.waitRoom[zone] = new Room(rid);
+        this.rooms[rid] = this.waitRoom[zone];
       }
       let waitRoom = this.waitRoom[zone]
       console.log(this.waitRoom)
@@ -294,16 +299,23 @@ class LobbyApi extends Handler {
       waitRoom.joinRoom(uid);
       console.log('waitRoom', waitRoom)
       if (waitRoom.isFull()) {
-       this.connector.send(`${waitRoom.serverInfo.serverId}/${consts.EVENT.EVT_CREATE_ROOM}`, {
-          rid: waitRoom.rid,
-          extra: {
-            map: zone,
-            players: waitRoom.players
-          }
-        }, (err, roomInfo) => {
-          this.createRoom(roomInfo);
-        });
-        this.waitRoom[zone] = null;
+        let serverGame = balance(userInfo, this.serverInfos)
+        if (!serverGame) {
+          this.connector.broadcast(uid, consts.ERROR.SERVER_NOT_FOUND);
+          return utils.invoke(cb, {});
+        } else {
+          waitRoom.serverInfo = serverGame
+          this.connector.send(`${waitRoom.serverInfo.serverId}/${consts.EVENT.EVT_CREATE_ROOM}`, {
+            rid: waitRoom.rid,
+            extra: {
+              map: zone,
+              players: waitRoom.players
+            }
+          }, (err, roomInfo) => {
+            this.createRoom(roomInfo);
+          });
+          this.waitRoom[zone] = null;
+        }
       }
     }
 
@@ -316,7 +328,7 @@ class LobbyApi extends Handler {
     let room = this.rooms[rid];
     let playerInfos = [];
     if (room) {
-      
+
       let uids = room.uids();
       for (let idx = 0; idx < uids.length; idx++) {
         let uid = uids[idx];
