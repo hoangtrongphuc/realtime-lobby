@@ -21,7 +21,7 @@ class LobbyApi extends Handler {
     this.cancelTimeStamp = new Map();
     setInterval(function () {
       this.checkServerIdle(this.serverInfos)
-    }, 300000).bind(this)
+    }.bind(this), 300000)
     
     this.connector.presence((uid, login) => {
       if (login) {
