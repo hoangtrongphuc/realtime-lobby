@@ -61,7 +61,9 @@ class GameServer extends Handler {
     this.connector.broadcast(consts.EVENT.EVT_CHANGE_PROFILE, {uid, data});
     return utils.invoke(cb);
   }
-  
+  close(cb) {
+    this.connector.close(cb)
+  }
   setHandler(handler) {
     this.handler = handler;
   }
