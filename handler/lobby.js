@@ -20,7 +20,7 @@ class LobbyApi extends Handler {
     this.coOpRoom = {};
     this.cancelTimeStamp = new Map();
     setInterval(function () {
-      this.checkServerIdle(this.serverInfos)
+      this.checkServerIdle(this.serverInfos, this.playerInfos)
     }.bind(this), 300000)
     
     this.connector.presence((uid, login) => {
@@ -84,9 +84,13 @@ class LobbyApi extends Handler {
     }
   }
 
-  checkServerIdle(serverInfos) {
+
+  checkServerIdle(serverInfos, playerInfos) {
     console.log('checkServerIdle')
-    if(_.keys(serverInfos).length <= 2) return;
+    console.log('serverList', serverInfos);
+    let serversCount = _.keys(serverInfos).length
+    if(serversCount <= 2) return;
+    if(_.keys(playerInfos).length > ((serversCount * 80)/2)) return;
     for (let instanceId in serverInfos) {
       if (serverInfos.hasOwnProperty(instanceId)) {
         if (serverInfos[instanceId].countRooms == 0 && serverInfos[instanceId].countPlayers == 0) {
