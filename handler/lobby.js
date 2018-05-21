@@ -103,6 +103,8 @@ class LobbyApi extends Handler {
           this.connector.send(`${instanceId}/${consts.EVENT.EVT_STOPPED}`, {instanceId}, (err, data) => {
             console.log('Delete ', instanceId, data)
           })
+          serversCount--;
+          if (ccu > ((serversCount * 80) / 2) || serversCount <= 2) return;
         }
       }
     }
