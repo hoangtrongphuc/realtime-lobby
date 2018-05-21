@@ -1,7 +1,7 @@
 'use strict';
 const uuid = require('uuid/v4');
 const Handler = require('./base');
-const _ = require('lodash');
+//const _ = require('./lodash');
 const moment = require('moment')
 const Room = require('../logic/room');
 //const applyFilter = require('loopback-filters');
@@ -20,9 +20,9 @@ class LobbyApi extends Handler {
     this.coOpRoom = {};
     this.cancelTimeStamp = new Map();
     setInterval(function () {
-      this.checkServerIdle(this.serverInfos, this.playerInfos)
+      this.checkServerIdle(this.serverInfos, this.playerInfos, this.rooms)
     }.bind(this), 300000)
-    
+
     this.connector.presence((uid, login) => {
       if (login) {
         console.log(uid, 'login')
@@ -84,13 +84,18 @@ class LobbyApi extends Handler {
     }
   }
 
-
-  checkServerIdle(serverInfos, playerInfos) {
+  checkServerIdle(serverInfos, playerInfos, rooms) {
     console.log('checkServerIdle')
-    console.log('serverList', serverInfos);
     let serversCount = _.keys(serverInfos).length
-    if(serversCount <= 2) return;
-    if(_.keys(playerInfos).length > ((serversCount * 80)/2)) return;
+    let ccu = _.keys(playerInfos).length;
+    let countRooms = _.keys(rooms).length;
+
+    console.error('serverList', serverInfos);
+    console.error('CCU', ccu);
+    console.error('countRooms', countRooms);
+
+    if (serversCount <= 2) return;
+    if (ccu > ((serversCount * 80) / 2)) return;
     for (let instanceId in serverInfos) {
       if (serverInfos.hasOwnProperty(instanceId)) {
         if (serverInfos[instanceId].countRooms == 0 && serverInfos[instanceId].countPlayers == 0) {
@@ -111,14 +116,6 @@ class LobbyApi extends Handler {
   }
 
   checkRoom({uid, token}, cb) {
-    if (this.players[uid]) {
-      let room = this.rooms[this.players[uid]];
-      this.connector.broadcast(uid, {
-        serverInfo: room.serverInfo,
-        roomInfo: room.roomInfo
-      });
-      return utils.invoke(cb, {check: true});
-    }
     if (this.playerInfos[uid]) {
       return utils.invoke(cb, consts.ERROR.PLAYER_DUPLICATE);
     }
@@ -248,6 +245,8 @@ class LobbyApi extends Handler {
         if (this.coOpRoom[zone].isFull()) {
           let serverGame = balance(userInfo, this.serverInfos)
           if (!serverGame) {
+            delete this.rooms[this.coOpRoom[zone].rid]
+            this.coOpRoom[zone] = null;
             this.connector.broadcast(uid, consts.ERROR.SERVER_NOT_FOUND);
             return utils.invoke(cb, {});
           } else {
@@ -315,6 +314,8 @@ class LobbyApi extends Handler {
         let serverGame = balance(userInfo, this.serverInfos)
         if (!serverGame) {
           this.connector.broadcast(uid, consts.ERROR.SERVER_NOT_FOUND);
+          delete this.rooms[waitRoom.rid]
+          this.waitRoom[zone] = null;
           return utils.invoke(cb, {});
         } else {
           waitRoom.serverInfo = serverGame
@@ -360,7 +361,11 @@ class LobbyApi extends Handler {
       }
       this.serverInfos[serverId].countRooms++;
       this.serverInfos[serverId].countPlayers += 2;
-      //delete this.rooms[roomId];
+      setTimeout(function (uids) {
+        for (let idx = 0; idx < uids.length; idx++) {
+          this.leaveGame({uid: uids[idx]})
+        }
+      }.bind(this, uids), consts.TIMEOUT_IN_ROOM)
     }
     return utils.invoke(cb);
   }
