@@ -1,7 +1,7 @@
 'use strict';
 const uuid = require('uuid/v4');
 const Handler = require('./base');
-//const _ = require('./lodash');
+const _ = require('lodash');
 const moment = require('moment')
 const Room = require('../logic/room');
 //const applyFilter = require('loopback-filters');
