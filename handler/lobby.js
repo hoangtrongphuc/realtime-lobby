@@ -93,18 +93,18 @@ class LobbyApi extends Handler {
     console.error('serverList', serverInfos);
     console.error('CCU', ccu);
     console.error('countRooms', countRooms);
-
     if (serversCount <= 2) return;
-    if (ccu > ((serversCount * 80) / 2)) return;
+    let serversNeed = Math.ceil(ccu / 40) + 1
+    if (serversNeed >= serversCount) return;
     for (let instanceId in serverInfos) {
       if (serverInfos.hasOwnProperty(instanceId)) {
         if (serverInfos[instanceId].countRooms == 0 && serverInfos[instanceId].countPlayers == 0) {
           this.removeServer(serverInfos[instanceId])
           this.connector.send(`${instanceId}/${consts.EVENT.EVT_STOPPED}`, {instanceId}, (err, data) => {
-            console.log('Delete ', instanceId, data)
+            console.log('Delete ', `${instanceId}/${consts.EVENT.EVT_STOPPED}`, data)
           })
           serversCount--;
-          if (ccu > ((serversCount * 80) / 2) || serversCount <= 2) return;
+          if (serversNeed >= serversCount || serversCount <= 2) break;
         }
       }
     }
