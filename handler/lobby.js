@@ -361,11 +361,13 @@ class LobbyApi extends Handler {
       }
       this.serverInfos[serverId].countRooms++;
       this.serverInfos[serverId].countPlayers += 2;
-      setTimeout(function (uids) {
+      setTimeout(function (uids, rid) {
         for (let idx = 0; idx < uids.length; idx++) {
-          this.leaveGame({uid: uids[idx]})
+          let uid = uids[idx]
+          let ridNow = this.players[uid];
+          if (ridNow == rid) this.leaveGame({uid})
         }
-      }.bind(this, uids), consts.TIMEOUT_IN_ROOM)
+      }.bind(this, uids, rid), consts.TIMEOUT_IN_ROOM)
     }
     return utils.invoke(cb);
   }
