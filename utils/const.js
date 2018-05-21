@@ -18,7 +18,7 @@ module.exports = {
     COOP: 1
   },
 
-  TIMEOUT: 10,
+  TIMEOUT_IN_ROOM: 110,
 
   ERROR: {
     PLAYER_IN_ROOM: {
@@ -36,7 +36,7 @@ module.exports = {
     },
     SERVER_NOT_FOUND: {
       CODE: 4,
-      MSG: 'Find not found server for your region!'
+      MSG: 'Server is maintenance. come back later!'
     },
     TIMEOUT: {
       CODE: 5,
