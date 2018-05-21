@@ -18,7 +18,7 @@ module.exports = {
     COOP: 1
   },
 
-  TIMEOUT_IN_ROOM: 110,
+  TIMEOUT_IN_ROOM: 110000,
 
   ERROR: {
     PLAYER_IN_ROOM: {
