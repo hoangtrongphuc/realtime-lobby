@@ -13,6 +13,7 @@ class LobbyApi extends Handler {
   constructor(config) {
     super(config)
     this.players = {};
+    this.playerCoOpLock = {};
     this.playerInfos = {};
     this.serverInfos = {};
     this.rooms = {};
@@ -167,7 +168,7 @@ class LobbyApi extends Handler {
 
     console.log('playCoop', userInfo, zone)
     if (fid) {
-      if (!this.playerInfos[fid]) return utils.invoke(cb, consts.ERROR.PLAYER_INVALID);
+      if (!this.playerInfos[fid] || this.playerCoOpLock[fid] || this.playerCoOpLock[uid]) return utils.invoke(cb, consts.ERROR.PLAYER_INVALID);
       if (uid == fid) {
         this.connector.broadcast(fid, consts.ERROR.PLAYER_DUPLICATE);
         return utils.invoke(cb, {});
@@ -182,8 +183,12 @@ class LobbyApi extends Handler {
           return utils.invoke(cb, {});
         }
       }
+      this.playerCoOpLock[fid] = true;
+      this.playerCoOpLock[uid] = true;
       this.connector.checkOnline(fid, check => {
-        console.log('check', check)
+        console.log('openLockUserOnline', check)
+        this.playerCoOpLock[fid] = false;
+        this.playerCoOpLock[uid] = false;
         if (!check) {
           this.connector.broadcast(uid, consts.ERROR.PLAYER_OFFLINE);
           return utils.invoke(cb, {});
@@ -214,8 +219,8 @@ class LobbyApi extends Handler {
               this.cancelPlay({fid})
               this.rooms[rid].joinRoom(uid);
               this.rooms[rid].joinRoom(fid);
-              console.log(this.rooms[rid])
-              this.connector.send(`${this.rooms[rid].serverInfo.serverId}/${consts.EVENT.EVT_CREATE_ROOM}`, {
+              this.createRoom({rid, players: this.rooms[rid].players})
+              this.connector.send(`${serverGame.serverId}/${consts.EVENT.EVT_CREATE_ROOM}`, {
                 rid: rid,
                 extra: {
                   map: zone || 1,
@@ -223,7 +228,15 @@ class LobbyApi extends Handler {
                   mode: consts.GAME_MODE.COOP,
                 }
               }, (err, roomInfo) => {
-                this.createRoom(roomInfo);
+                console.log('RoomInfo', roomInfo)
+                this.connector.broadcast(uid, {
+                  serverInfo: serverGame,
+                  roomInfo: roomInfo
+                });
+                this.connector.broadcast(fid, {
+                  serverInfo: serverGame,
+                  roomInfo: roomInfo
+                });
               });
             }
           }
@@ -242,26 +255,37 @@ class LobbyApi extends Handler {
           this.coOpRoom[zone] = new Room(rid);
           this.rooms[rid] = this.coOpRoom[zone];
         }
+        let coOpRoom = this.coOpRoom[zone]
         this.cancelPlay({uid})
-        this.coOpRoom[zone].joinRoom(uid);
-        if (this.coOpRoom[zone].isFull()) {
+        coOpRoom.joinRoom(uid);
+        console.log('coOpRoom', coOpRoom)
+        if (coOpRoom.isFull()) {
           let serverGame = balance(userInfo, this.serverInfos)
           if (!serverGame) {
-            delete this.rooms[this.coOpRoom[zone].rid]
+            delete this.rooms[coOpRoom.rid]
             this.coOpRoom[zone] = null;
             this.connector.broadcast(uid, consts.ERROR.SERVER_NOT_FOUND);
             return utils.invoke(cb, {});
           } else {
-            this.coOpRoom[zone].serverInfo = serverGame;
-            this.connector.send(`${this.coOpRoom[zone].serverInfo.serverId}/${consts.EVENT.EVT_CREATE_ROOM}`, {
-              rid: this.coOpRoom[zone].rid,
+            coOpRoom.serverInfo = serverGame;
+            this.createRoom({rid: coOpRoom.rid, players: coOpRoom.players})
+            this.connector.send(`${serverGame.serverId}/${consts.EVENT.EVT_CREATE_ROOM}`, {
+              rid: coOpRoom.rid,
               extra: {
                 map: zone,
-                players: this.coOpRoom[zone].players,
+                players: coOpRoom.players,
                 mode: consts.GAME_MODE.COOP,
               }
             }, (err, roomInfo) => {
-              this.createRoom(roomInfo);
+              console.log('RoomInfo', roomInfo)
+              let uids = coOpRoom.uids();
+              for (let idx = 0; idx < uids.length; idx++) {
+                let uid = uids[idx];
+                this.connector.broadcast(uid, {
+                  serverInfo: serverGame,
+                  roomInfo: roomInfo
+                });
+              }
             });
             this.coOpRoom[zone] = null;
           }
@@ -308,7 +332,6 @@ class LobbyApi extends Handler {
         this.rooms[rid] = this.waitRoom[zone];
       }
       let waitRoom = this.waitRoom[zone]
-      console.log(this.waitRoom)
       this.cancelPlay({uid})
       waitRoom.joinRoom(uid);
       console.log('waitRoom', waitRoom)
@@ -321,14 +344,23 @@ class LobbyApi extends Handler {
           return utils.invoke(cb, {});
         } else {
           waitRoom.serverInfo = serverGame
-          this.connector.send(`${waitRoom.serverInfo.serverId}/${consts.EVENT.EVT_CREATE_ROOM}`, {
+          this.createRoom({rid: waitRoom.rid, players: waitRoom.players})
+          this.connector.send(`${serverGame.serverId}/${consts.EVENT.EVT_CREATE_ROOM}`, {
             rid: waitRoom.rid,
             extra: {
               map: zone,
               players: waitRoom.players
             }
           }, (err, roomInfo) => {
-            this.createRoom(roomInfo);
+            console.log('RoomInfo', roomInfo)
+            let uids = waitRoom.uids();
+            for (let idx = 0; idx < uids.length; idx++) {
+              let uid = uids[idx];
+              this.connector.broadcast(uid, {
+                serverInfo: serverGame,
+                roomInfo: roomInfo
+              });
+            }
           });
           this.waitRoom[zone] = null;
         }
@@ -339,34 +371,25 @@ class LobbyApi extends Handler {
   }
 
   createRoom(roomInfo, cb) {
-    console.log("RoomInfo: ", roomInfo);
     let rid = roomInfo.rid;
     let room = this.rooms[rid];
     let playerInfos = [];
     if (room) {
-
       let uids = room.uids();
       for (let idx = 0; idx < uids.length; idx++) {
         let uid = uids[idx];
+        this.players[uid] = rid;
         playerInfos.push(this.playerInfos[uid]);
       }
       room.roomInfo = Object.assign(roomInfo, {playerInfos});
       let serverId = room.serverInfo.serverId
-      for (let idx = 0; idx < uids.length; idx++) {
-        let uid = uids[idx];
-
-        this.players[uid] = rid;
-        this.connector.broadcast(uid, {
-          serverInfo: room.serverInfo,
-          roomInfo: roomInfo
-        });
-      }
       this.serverInfos[serverId].countRooms++;
       this.serverInfos[serverId].countPlayers += 2;
       setTimeout(function (uids, rid) {
         for (let idx = 0; idx < uids.length; idx++) {
           let uid = uids[idx]
           let ridNow = this.players[uid];
+          console.log('timeOut dis ', uids, rid, ridNow)
           if (ridNow == rid) this.leaveGame({uid})
         }
       }.bind(this, uids, rid), consts.TIMEOUT_IN_ROOM)
