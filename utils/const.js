@@ -44,7 +44,7 @@ module.exports = {
     },
     PLAYER_INVALID: {
       CODE: 6,
-      MSG: 'Player is invalid!'
+      MSG: 'Player is offline!'
     },
     PLAYER_CANCEL: {
       CODE: 7,
