@@ -1,5 +1,13 @@
 'use strict';
 module.exports = {
+
+  REDIS_KEY: {
+    SERVER_INFO: 'server:i',
+    PLAYER_INFO: 'player:i',
+    PLAYER_ROOM: 'player:r',
+    ROOM_INFO: 'room'
+  },
+
   EVENT: {
     EVT_STARTTED: 'onstart',
     EVT_CHECK_ROOM: 'checkRoom',
@@ -32,7 +40,6 @@ module.exports = {
     PLAYER_DUPLICATE: {
       CODE: 3,
       MSG: 'Your account is using on other device!'
-
     },
     SERVER_NOT_FOUND: {
       CODE: 4,
@@ -44,7 +51,7 @@ module.exports = {
     },
     PLAYER_INVALID: {
       CODE: 6,
-      MSG: 'Player is offline!'
+      MSG: 'Network has problem! Please comeback later!'
     },
     PLAYER_CANCEL: {
       CODE: 7,
@@ -52,7 +59,7 @@ module.exports = {
     },
     SYSTEM_ERROR: {
       CODE: 8,
-      MSG: 'System error!'
+      MSG: 'Server is maintenance. come back later!'
     }
   },
 
@@ -64,7 +71,7 @@ module.exports = {
     Oceania: ['ap-southeast-2', 'ap-southeast-1']
   },
 
-    COUNTRY_COORDINATES: {
+  COUNTRY_COORDINATES: {
     "AD": [42.5, 1.5],
     "AE": [24, 54],
     "AF": [33, 65],
