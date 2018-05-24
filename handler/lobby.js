@@ -119,9 +119,6 @@ class LobbyApi extends Handler {
   }
 
   checkRoom({uid, token}, cb) {
-    if (this.playerInfos[uid]) {
-      this.connector.broadcast(uid, {token});
-    }
     this.connector.send(consts.EVENT.EVT_PLAYER_LOGIN, {uid, token}, (err, data) => {
       if (!err && data) {
         console.log('Response from game Server', err, data)
@@ -134,6 +131,7 @@ class LobbyApi extends Handler {
           });
           return utils.invoke(cb, {check: true});
         } else {
+          this.connector.broadcast(uid, {token});
           return utils.invoke(cb, {check: false});
         }
       }
