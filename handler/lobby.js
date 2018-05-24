@@ -120,7 +120,8 @@ class LobbyApi extends Handler {
 
   checkRoom({uid, token}, cb) {
     if (this.playerInfos[uid]) {
-      return utils.invoke(cb, consts.ERROR.PLAYER_DUPLICATE);
+      //return utils.invoke(cb, consts.ERROR.PLAYER_DUPLICATE);
+      this.connector.broadcast(uid, {token});
     }
     this.connector.send(consts.EVENT.EVT_PLAYER_LOGIN, {uid, token}, (err, data) => {
       if (!err && data) {
@@ -170,7 +171,7 @@ class LobbyApi extends Handler {
     let timestamp = userInfo.timestamp;
 
     if (fid) {
-      if (!this.playerInfos[fid] || this.playerCoOpLock[fid] || this.playerCoOpLock[uid]) return utils.invoke(cb, consts.ERROR.PLAYER_INVALID);
+      if (!this.playerInfos[fid] || this.playerCoOpLock[fid] || this.playerCoOpLock[uid]) return utils.invoke(cb, consts.ERROR.PLAYER_OFFLINE);
       if (uid == fid) {
         this.connector.broadcast(fid, consts.ERROR.PLAYER_DUPLICATE);
         return utils.invoke(cb, {});
@@ -376,8 +377,8 @@ class LobbyApi extends Handler {
   createRoom(roomInfo) {
     let rid = roomInfo.rid;
     let room = this.rooms[rid];
+    let playerInfos = [];
     if (room) {
-      let playerInfos = [];
       let uids = room.uids();
       for (let idx = 0; idx < uids.length; idx++) {
         let uid = uids[idx];
@@ -388,12 +389,11 @@ class LobbyApi extends Handler {
       this.serverInfos[serverId].countRooms++;
       this.serverInfos[serverId].countPlayers += 2;
       setTimeout(function (uids, rid) {
-        for (let idx = 0; idx < uids.length; idx++) {
-          let uid = uids[idx]
-          let ridNow = this.players[uid];
-          console.log('timeOut dis ', uids, rid, ridNow)
-          if (ridNow == rid) this.leaveGame({uid})
-        }
+        console.log('timeOut dis ', uids, rid)
+        let uid1 = uids[0], uid2 = uids[1];
+        if (this.players[uid1] == rid) this.leaveGame({uid: uid1})
+        if (this.players[uid2] == rid) this.leaveGame({uid: uid2})
+
       }.bind(this, uids, rid), consts.TIMEOUT_IN_ROOM)
     }
     return playerInfos;
@@ -415,14 +415,16 @@ class LobbyApi extends Handler {
     if (uid && rid) {
       let room = this.rooms[rid];
       room.leaveRoom(uid)
+      delete this.players[uid];
       if (room.players.length == 0) {
         console.log('deleteRoom ', rid);
         let serverId = room.serverInfo.serverId
-        this.serverInfos[serverId].countRooms--;
-        this.serverInfos[serverId].countPlayers -= 2;
+        if (this.serverInfos[serverId]) {
+          this.serverInfos[serverId].countRooms--;
+          this.serverInfos[serverId].countPlayers -= 2;
+        }
         delete this.rooms[rid]
       }
-      delete this.players[uid];
     }
   }
 }
