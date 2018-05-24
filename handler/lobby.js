@@ -163,10 +163,12 @@ class LobbyApi extends Handler {
     if (!this.playerInfos[uid]) return utils.invoke(cb, consts.ERROR.PLAYER_INVALID);
     let fid = userInfo.fid;
     let zone = this.playerInfos[uid].zone;
+    console.log('playCoop', userInfo, this.playerInfos[fid], this.playerInfos[uid], zone)
+    console.log('lock', this.playerCoOpLock[fid], this.playerCoOpLock[uid])
+
     if (!zone) return utils.invoke(cb, consts.ERROR.PLAYER_INVALID);
     let timestamp = userInfo.timestamp;
 
-    console.log('playCoop', userInfo, zone)
     if (fid) {
       if (!this.playerInfos[fid] || this.playerCoOpLock[fid] || this.playerCoOpLock[uid]) return utils.invoke(cb, consts.ERROR.PLAYER_INVALID);
       if (uid == fid) {
@@ -219,7 +221,7 @@ class LobbyApi extends Handler {
               this.cancelPlay({fid})
               this.rooms[rid].joinRoom(uid);
               this.rooms[rid].joinRoom(fid);
-              this.createRoom({rid, players: this.rooms[rid].players})
+              let playerInfos = this.createRoom({rid, players: this.rooms[rid].players})
               this.connector.send(`${serverGame.serverId}/${consts.EVENT.EVT_CREATE_ROOM}`, {
                 rid: rid,
                 extra: {
@@ -228,6 +230,7 @@ class LobbyApi extends Handler {
                   mode: consts.GAME_MODE.COOP,
                 }
               }, (err, roomInfo) => {
+                roomInfo = Object.assign(roomInfo, {playerInfos});
                 console.log('RoomInfo', roomInfo)
                 this.connector.broadcast(uid, {
                   serverInfo: serverGame,
@@ -268,7 +271,7 @@ class LobbyApi extends Handler {
             return utils.invoke(cb, {});
           } else {
             coOpRoom.serverInfo = serverGame;
-            this.createRoom({rid: coOpRoom.rid, players: coOpRoom.players})
+            let playerInfos = this.createRoom({rid: coOpRoom.rid, players: coOpRoom.players})
             this.connector.send(`${serverGame.serverId}/${consts.EVENT.EVT_CREATE_ROOM}`, {
               rid: coOpRoom.rid,
               extra: {
@@ -277,11 +280,11 @@ class LobbyApi extends Handler {
                 mode: consts.GAME_MODE.COOP,
               }
             }, (err, roomInfo) => {
-              console.log('RoomInfo', roomInfo)
               let uids = coOpRoom.uids();
+              roomInfo = Object.assign(roomInfo, {playerInfos});
+              console.log('RoomInfo', roomInfo)
               for (let idx = 0; idx < uids.length; idx++) {
-                let uid = uids[idx];
-                this.connector.broadcast(uid, {
+                this.connector.broadcast(uids[idx], {
                   serverInfo: serverGame,
                   roomInfo: roomInfo
                 });
@@ -344,7 +347,7 @@ class LobbyApi extends Handler {
           return utils.invoke(cb, {});
         } else {
           waitRoom.serverInfo = serverGame
-          this.createRoom({rid: waitRoom.rid, players: waitRoom.players})
+          let playerInfos = this.createRoom({rid: waitRoom.rid, players: waitRoom.players})
           this.connector.send(`${serverGame.serverId}/${consts.EVENT.EVT_CREATE_ROOM}`, {
             rid: waitRoom.rid,
             extra: {
@@ -352,11 +355,11 @@ class LobbyApi extends Handler {
               players: waitRoom.players
             }
           }, (err, roomInfo) => {
-            console.log('RoomInfo', roomInfo)
             let uids = waitRoom.uids();
+            roomInfo = Object.assign(roomInfo, {playerInfos});
+            console.log('RoomInfo', roomInfo)
             for (let idx = 0; idx < uids.length; idx++) {
-              let uid = uids[idx];
-              this.connector.broadcast(uid, {
+              this.connector.broadcast(uids[idx], {
                 serverInfo: serverGame,
                 roomInfo: roomInfo
               });
@@ -370,18 +373,17 @@ class LobbyApi extends Handler {
     utils.invoke(cb, {});
   }
 
-  createRoom(roomInfo, cb) {
+  createRoom(roomInfo) {
     let rid = roomInfo.rid;
     let room = this.rooms[rid];
-    let playerInfos = [];
     if (room) {
+      let playerInfos = [];
       let uids = room.uids();
       for (let idx = 0; idx < uids.length; idx++) {
         let uid = uids[idx];
         this.players[uid] = rid;
         playerInfos.push(this.playerInfos[uid]);
       }
-      room.roomInfo = Object.assign(roomInfo, {playerInfos});
       let serverId = room.serverInfo.serverId
       this.serverInfos[serverId].countRooms++;
       this.serverInfos[serverId].countPlayers += 2;
@@ -394,7 +396,7 @@ class LobbyApi extends Handler {
         }
       }.bind(this, uids, rid), consts.TIMEOUT_IN_ROOM)
     }
-    return utils.invoke(cb);
+    return playerInfos;
   }
 
   joinGame(roomInfo = {}, cb) {
@@ -408,11 +410,13 @@ class LobbyApi extends Handler {
 
   leaveGame(info = {}, cb) {
     let uid = info.uid;
+    console.log(uid, ' leave game!')
     let rid = this.players[uid]
     if (uid && rid) {
       let room = this.rooms[rid];
       room.leaveRoom(uid)
       if (room.players.length == 0) {
+        console.log('deleteRoom ', rid);
         let serverId = room.serverInfo.serverId
         this.serverInfos[serverId].countRooms--;
         this.serverInfos[serverId].countPlayers -= 2;
