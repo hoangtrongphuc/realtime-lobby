@@ -120,8 +120,7 @@ class LobbyApi extends Handler {
 
   checkRoom({uid, token}, cb) {
     if (this.playerInfos[uid]) {
-      //return utils.invoke(cb, consts.ERROR.PLAYER_DUPLICATE);
-      this.connector.broadcast(uid, {token});
+      return utils.invoke(cb, consts.ERROR.PLAYER_DUPLICATE);
     }
     this.connector.send(consts.EVENT.EVT_PLAYER_LOGIN, {uid, token}, (err, data) => {
       if (!err && data) {
@@ -233,6 +232,7 @@ class LobbyApi extends Handler {
               }, (err, roomInfo) => {
                 roomInfo = Object.assign(roomInfo, {playerInfos});
                 console.log('RoomInfo', roomInfo)
+                this.rooms[rid].roomInfo = roomInfo;
                 this.connector.broadcast(uid, {
                   serverInfo: serverGame,
                   roomInfo: roomInfo
@@ -284,6 +284,7 @@ class LobbyApi extends Handler {
               let uids = coOpRoom.uids();
               roomInfo = Object.assign(roomInfo, {playerInfos});
               console.log('RoomInfo', roomInfo)
+              coOpRoom.roomInfo = roomInfo;
               for (let idx = 0; idx < uids.length; idx++) {
                 this.connector.broadcast(uids[idx], {
                   serverInfo: serverGame,
@@ -359,6 +360,7 @@ class LobbyApi extends Handler {
             let uids = waitRoom.uids();
             roomInfo = Object.assign(roomInfo, {playerInfos});
             console.log('RoomInfo', roomInfo)
+            waitRoom.roomInfo = roomInfo;
             for (let idx = 0; idx < uids.length; idx++) {
               this.connector.broadcast(uids[idx], {
                 serverInfo: serverGame,
