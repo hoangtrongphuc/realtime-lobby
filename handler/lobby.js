@@ -120,7 +120,7 @@ class LobbyApi extends Handler {
 
   checkRoom({uid, token}, cb) {
     if (this.playerInfos[uid]) {
-      return utils.invoke(cb, consts.ERROR.PLAYER_DUPLICATE);
+      this.connector.broadcast(uid, {token});
     }
     this.connector.send(consts.EVENT.EVT_PLAYER_LOGIN, {uid, token}, (err, data) => {
       if (!err && data) {
