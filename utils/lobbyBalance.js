@@ -4,11 +4,21 @@ const consts = require('./const')
 
 module.exports = {
   balance: function (userInfo, servers) {
-	let serverIds = Object.keys(servers);
+	let serversUse = {};
+    for (let serverId in servers) {
+      if (servers.hasOwnProperty(serverId)) {
+        let server = servers[serverId]
+        if (server.countPlayers >= server.maxPlayers || server.countRooms >= server.maxRooms) return
+        else serversUse[serverId] = server
+      }
+    }
+
+    let serverIds = Object.keys(serversUse);
     let index = roomCounter % serverIds.length;
-    roomCounter++;
-    console.log(index, servers);
-    return servers[serverIds[index]];
+    if (serversUse[serverIds[index]]) {
+      roomCounter++;
+      return serversUse[serverIds[index]];
+    } else return null;
   }
 
 
