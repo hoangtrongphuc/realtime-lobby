@@ -42,6 +42,11 @@ class Connector extends Interface {
     this.netClient.presence(cb);
   }
 
+  
+  presenceUser(user, cb) {
+    this.netClient.presenceUser(user, cb);
+  }
+  
   send(eventName, data, cb) {
     this.netClient.make(eventName, data, cb);
   }
