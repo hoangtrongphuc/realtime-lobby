@@ -55,10 +55,13 @@ class Client extends ClientInterface {
   }
 
   presence(cb) {
-    console.log('dkmmmm')
     this.deepstream.presence.subscribe(cb)
   }
   
+  
+  presenceUser(user, cb) {
+    this.deepstream.presence.subscribe(user, cb)
+  }
   
   close(cb) {
     console.log('Close')
