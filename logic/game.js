@@ -10,8 +10,10 @@ class GameServer extends Handler {
     this.connector = connector;
     this.connector.presenceUser('lobbyServer', (uid, login) => {
       if (login) {
-        console.log('Lobby login!')
-        this.connector.broadcast(consts.EVENT.EVT_STARTTED, this.serverInfo);
+        console.log('Lobby login!', this.serverInfo)
+        setTimeout(() => {
+          this.connector.broadcast(consts.EVENT.EVT_STARTTED, this.serverInfo);
+        }, 1000)
       }
     })
   }
