@@ -8,6 +8,12 @@ class GameServer extends Handler {
     super(connector, opts);
     this.handler = null;
     this.connector = connector;
+    this.connector.presenceUser('lobbyServer', (uid, login) => {
+      if (login) {
+        console.log('Lobby login!')
+        this.connector.broadcast(consts.EVENT.EVT_STARTTED, this.serverInfo);
+      }
+    })
   }
 
   onEvent(eventName, data, cb) {
@@ -33,6 +39,7 @@ class GameServer extends Handler {
   onStarted(data) {
     console.log("StartedEvent: ", data);
     this.serverId = data.serverId
+    this.serverInfo = data;
     this.addEvent(`${data.serverId}/${consts.EVENT.EVT_CREATE_ROOM}`);
     this.addEvent(`${data.serverId}/${consts.EVENT.EVT_STOPPED}`);
     this.addEvent(consts.EVENT.EVT_PLAYER_LOGIN);
