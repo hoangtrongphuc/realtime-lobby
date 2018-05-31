@@ -174,14 +174,11 @@ class LobbyApi extends Handler {
         return utils.invoke(cb, {});
       }
       if (timestamp) {
-        console.log((moment().diff(moment(startTime))).asMinutes())
-        if (moment.duration(moment().diff(moment(startTime))).asMinutes() > consts.TIMEOUT) {
-          this.connector.broadcast(fid, consts.ERROR.TIMEOUT);
-          return utils.invoke(cb, {});
-        } else if (this.cancelTimeStamp.get(timestamp + uid)) {
+        if (this.cancelTimeStamp.get(timestamp + uid)) {
           this.connector.broadcast(fid, consts.ERROR.PLAYER_CANCEL);
           return utils.invoke(cb, {});
         }
+        this.cancelTimeStamp.set(timestamp + uid, uid)
       }
       this.playerCoOpLock[fid] = true;
       this.playerCoOpLock[uid] = true;
