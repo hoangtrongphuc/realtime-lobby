@@ -177,6 +177,9 @@ class LobbyApi extends Handler {
         if (this.cancelTimeStamp.get(timestamp + uid)) {
           this.connector.broadcast(fid, consts.ERROR.PLAYER_CANCEL);
           return utils.invoke(cb, {});
+        } else if (moment.duration(moment().diff(moment.unix(timestamp))).asSeconds() > consts.TIMEOUT_INVITE) {
+          this.connector.broadcast(fid, consts.ERROR.TIMEOUT);
+          return utils.invoke(cb, {});
         }
         this.cancelTimeStamp.set(timestamp + uid, uid)
       }
