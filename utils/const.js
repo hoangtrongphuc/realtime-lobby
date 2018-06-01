@@ -25,7 +25,7 @@ module.exports = {
     DUEL: 2,
     COOP: 1
   },
-
+  TIMEOUT_INVITE: 300,
   TIMEOUT_IN_ROOM: 110000,
 
   ERROR: {
