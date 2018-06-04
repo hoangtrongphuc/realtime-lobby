@@ -21,16 +21,19 @@ class Client extends ClientInterface {
   }
 
   pub(chanelName, data) {
+    if(!chanelName) return;
     this.deepstream.event.emit(chanelName, data);
   }
 
   sub(chanelName, cb) {
+    if(!chanelName) return;
     this.deepstream.event.subscribe(chanelName, (data) => {
       cb(data);
     });
   }
 
   provide(chanelName, cb) {
+    if(!chanelName) return;
     this.deepstream.rpc.provide(chanelName, (data, rpcResponse) => {
       cb(data, (response) => {
         console.log("Response Data: ", chanelName, response);
@@ -49,6 +52,7 @@ class Client extends ClientInterface {
   }
 
   make(chanelName, data, cb) {
+    if(!chanelName) return;
     this.deepstream.rpc.make(chanelName, data, (err, result) => {
       cb(err, result);
     });
