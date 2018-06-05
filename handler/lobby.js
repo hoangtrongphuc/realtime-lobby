@@ -27,7 +27,6 @@ class LobbyApi extends Handler {
     this.connector.presence((uid, login) => {
       if (login) {
         console.log(uid, 'login')
-
       } else {
         console.log(uid, 'disconnect')
         if (!this.players[uid]) this.cancelPlay({uid});
@@ -158,7 +157,7 @@ class LobbyApi extends Handler {
   playCoop(userInfo, cb) {
 
     let uid = userInfo.uid;
-    if (!this.playerInfos[uid]) return utils.invoke(cb, consts.ERROR.PLAYER_INVALID);
+    if (!uid || !this.playerInfos[uid]) return utils.invoke(cb, consts.ERROR.PLAYER_INVALID);
     let fid = userInfo.fid;
     let zone = this.playerInfos[uid].zone;
     console.log('playCoop', userInfo, this.playerInfos[fid], this.playerInfos[uid], zone)
@@ -300,6 +299,7 @@ class LobbyApi extends Handler {
 
   cancelPlay(userInfo) {
     let uid = userInfo.uid;
+    if (!uid) return;
     let zone = null;
     if (this.playerInfos[uid]) zone = this.playerInfos[uid].zone;
     if (this.players[uid] || !zone) return
@@ -318,7 +318,7 @@ class LobbyApi extends Handler {
 
   playnow(userInfo, cb) {
     let uid = userInfo.uid;
-    if (!this.playerInfos[uid]) return utils.invoke(cb, consts.ERROR.PLAYER_INVALID);
+    if (!uid || !this.playerInfos[uid]) return utils.invoke(cb, consts.ERROR.PLAYER_INVALID);
     let zone = this.playerInfos[uid].zone;
     console.log('playnow Zone', zone)
     if (!zone) return utils.invoke(cb, consts.ERROR.PLAYER_INVALID);
