@@ -31,23 +31,33 @@ const avatar = [
   'https://accdw.gviet.vn/avatar/2043287779033870.png',
   'https://accdw.gviet.vn/avatar/1801071359949103.png',
   'https://accdw.gviet.vn/avatar/1670901939663050.png',
+  'https://accdw.gviet.vn/df3.png',
+  'https://accdw.gviet.vn/df4.png',
+  'https://accdw.gviet.vn/df5.png',
+  'https://accdw.gviet.vn/df7.png',
   'https://accdw.gviet.vn/avatar/1626696644051739.png',
   'https://accdw.gviet.vn/avatar/1840304506009270.png',
+  'https://accdw.gviet.vn/avatar/2410921538933738.png',
+  'https://accdw.gviet.vn/avatar/1890112584341536.png',
+  'https://accdw.gviet.vn/avatar/1454123588029409.png',
+  'https://accdw.gviet.vn/avatar/1770707512975372.png',
+  'https://accdw.gviet.vn/df1.png',
+  'https://accdw.gviet.vn/df2.png',
+  'https://accdw.gviet.vn/df8.png',
   'https://accdw.gviet.vn/avatar/2088179207878343.png',
   'https://accdw.gviet.vn/avatar/1903956086315799.png',
   'https://accdw.gviet.vn/avatar/1890104987700839.png',
   'https://accdw.gviet.vn/avatar/1934908983236657.png',
-  'https://accdw.gviet.vn/avatar/2410921538933738.png',
-  'https://accdw.gviet.vn/avatar/1890112584341536.png',
-  'https://accdw.gviet.vn/avatar/1454123588029409.png',
-  'https://accdw.gviet.vn/avatar/1770707512975372.png'
+  'https://accdw.gviet.vn/df9.png',
+  'https://accdw.gviet.vn/df10.png',
+  'https://accdw.gviet.vn/df16.png',
 ]
 function getBot(idx) {
   let token = tokens[idx]
   return {
     _id: bots[idx],
     token,
-    avatar: avatar[utils.getRandomInt(0, 15)],
+    avatar: avatar[utils.getRandomInt(0, 25)],
     fullname: random_name({random: Math.random, female: true})
   }
 }
