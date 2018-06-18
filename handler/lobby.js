@@ -8,7 +8,49 @@ const Room = require('../logic/room');
 const consts = require('../utils/const');
 const utils = require('../utils/utils');
 const balance = require('../utils/lobbyBalance').balance;
+const random_name = require('node-random-name');
+const bots = [
+  "B1Spy-4kQ322",
+  "BJJoqf4km878",
+  "Hkk_FJrJ7048",
+  "H1Mte-rJQ057",
+  "S1lFb-BkX546"];
 
+const tokens = [
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJCMVNweS00a1EzMjIiLCJhcHBJZCI6IlNrQWdLcldDeiIsInB0SWQiOiJya3NQdHItMHoiLCJpYXQiOjE1MjczMTkwMzEsImV4cCI6MTUyODUyODYzMX0.jDZTcUu_pEoR41AmRgU0bH4scrhKg5ZEYJNl-5pYe7M",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJCSkpvcWY0a204NzgiLCJhcHBJZCI6IlNrQWdLcldDeiIsInB0SWQiOiJya3NQdHItMHoiLCJpYXQiOjE1MjczMTkyMzAsImV4cCI6MTUyODUyODgzMH0.Yp0G6rW9GcikCYvbrPCL4HnS-NH59dKXwz7A5P5DHfI",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJIa2tfRkpySjcwNDgiLCJhcHBJZCI6IlNrQWdLcldDeiIsInB0SWQiOiJya3NQdHItMHoiLCJpYXQiOjE1MjcyMTI3NjcsImV4cCI6MTUyODQyMjM2N30.tlgEiCV06c7sb283cgKBagTl76BCJ56u76DMWRTKL0k",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJIMU10ZS1ySlEwNTciLCJhcHBJZCI6IlNrQWdLcldDeiIsInB0SWQiOiJya3NQdHItMHoiLCJpYXQiOjE1MjcyNDI1MDUsImV4cCI6MTUyODQ1MjEwNX0.fkaRZXtda9sE_BAhaJFcDjGEdergpb-zDlsJZn2rGa8",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJTMWxGYi1Ca1g1NDYiLCJhcHBJZCI6IlNrQWdLcldDeiIsInB0SWQiOiJya3NQdHItMHoiLCJpYXQiOjE1MjczMDg2MDIsImV4cCI6MTUyODUxODIwMn0.fjeSYHftBs27R2qeoeFDk0cNXcDtzd9x0KVhQTAZCXk"
+];
+
+const avatar = [
+  'https://accdw.gviet.vn/avatar/1813548962023502.png',
+  'https://accdw.gviet.vn/avatar/1711541168940891.png',
+  'https://accdw.gviet.vn/avatar/1489945317794692.png',
+  'https://accdw.gviet.vn/avatar/2043287779033870.png',
+  'https://accdw.gviet.vn/avatar/1801071359949103.png',
+  'https://accdw.gviet.vn/avatar/1670901939663050.png',
+  'https://accdw.gviet.vn/avatar/1626696644051739.png',
+  'https://accdw.gviet.vn/avatar/1840304506009270.png',
+  'https://accdw.gviet.vn/avatar/2088179207878343.png',
+  'https://accdw.gviet.vn/avatar/1903956086315799.png',
+  'https://accdw.gviet.vn/avatar/1890104987700839.png',
+  'https://accdw.gviet.vn/avatar/1934908983236657.png',
+  'https://accdw.gviet.vn/avatar/2410921538933738.png',
+  'https://accdw.gviet.vn/avatar/1890112584341536.png',
+  'https://accdw.gviet.vn/avatar/1454123588029409.png',
+  'https://accdw.gviet.vn/avatar/1770707512975372.png'
+]
+function getBot(idx) {
+  let token = tokens[idx]
+  return {
+    _id: bots[idx],
+    token,
+    avatar: avatar[utils.getRandomInt(0, 15)],
+    fullname: random_name({random: Math.random, female: true})
+  }
+}
 class LobbyApi extends Handler {
   constructor(config) {
     super(config)
@@ -27,6 +69,7 @@ class LobbyApi extends Handler {
     this.connector.presence((uid, login) => {
       if (login) {
         console.log(uid, 'login')
+
       } else {
         console.log(uid, 'disconnect')
         if (!this.players[uid]) this.cancelPlay({uid});
@@ -255,6 +298,42 @@ class LobbyApi extends Handler {
           let rid = uuid();
           this.coOpRoom[zone] = new Room(rid);
           this.rooms[rid] = this.coOpRoom[zone];
+          setTimeout((rid, zone) => {
+            if (!this.coOpRoom[zone] || this.coOpRoom[zone].rid != rid) return;
+            let room = this.rooms[rid];
+            if (!room.isFull() || !room.isEmpty()) {
+              let bot = getBot(utils.getRandomInt(0, 4));
+              this.playerInfos[bot._id] = bot;
+              room.joinRoom(bot._id)
+              let serverGame = balance({uid: bot._id}, this.serverInfos)
+              if (serverGame) {
+                room.serverInfo = serverGame
+                let playerInfos = this.createRoom({rid: room.rid, players: room.players})
+                this.connector.send(`${serverGame.serverId}/${consts.EVENT.EVT_CREATE_ROOM}`, {
+                  rid: room.rid,
+                  extra: {
+                    map: zone,
+                    players: room.players,
+                    mode: consts.GAME_MODE.COOP,
+                  }
+                }, (err, roomInfo) => {
+                  let uids = room.uids();
+                  roomInfo = Object.assign(roomInfo, {playerInfos});
+                  roomInfo.bot = true;
+                  roomInfo.token = bot.token;
+                  console.log('RoomInfo', roomInfo)
+                  room.roomInfo = roomInfo;
+                  for (let idx = 0; idx < uids.length; idx++) {
+                    this.connector.broadcast(uids[idx], {
+                      serverInfo: serverGame,
+                      roomInfo: roomInfo
+                    });
+                  }
+                });
+                this.coOpRoom[zone] = null;
+              }
+            }
+          }, 7000, rid, zone)
         }
         let coOpRoom = this.coOpRoom[zone]
         this.cancelPlay({uid})
@@ -333,6 +412,41 @@ class LobbyApi extends Handler {
         let rid = uuid();
         this.waitRoom[zone] = new Room(rid);
         this.rooms[rid] = this.waitRoom[zone];
+        setTimeout((rid, zone) => {
+          if (!this.waitRoom[zone] || this.waitRoom[zone].rid != rid) return;
+          let room = this.rooms[rid];
+          if (!room.isFull() || !room.isEmpty()) {
+            let bot = getBot(utils.getRandomInt(0, 4));
+            this.playerInfos[bot._id] = bot;
+            room.joinRoom(bot._id)
+            let serverGame = balance({uid: bot._id}, this.serverInfos)
+            if (serverGame) {
+              room.serverInfo = serverGame
+              let playerInfos = this.createRoom({rid: room.rid, players: room.players})
+              this.connector.send(`${serverGame.serverId}/${consts.EVENT.EVT_CREATE_ROOM}`, {
+                rid: room.rid,
+                extra: {
+                  map: zone,
+                  players: room.players
+                }
+              }, (err, roomInfo) => {
+                let uids = room.uids();
+                roomInfo = Object.assign(roomInfo, {playerInfos});
+                roomInfo.bot = true;
+                roomInfo.token = bot.token;
+                console.log('RoomInfo', roomInfo)
+                room.roomInfo = roomInfo;
+                for (let idx = 0; idx < uids.length; idx++) {
+                  this.connector.broadcast(uids[idx], {
+                    serverInfo: serverGame,
+                    roomInfo: roomInfo
+                  });
+                }
+              });
+              this.waitRoom[zone] = null;
+            }
+          }
+        }, 7000, rid, zone)
       }
       let waitRoom = this.waitRoom[zone]
       this.cancelPlay({uid})
