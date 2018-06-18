@@ -12,7 +12,9 @@ module.exports = {
     let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   },
-
+  getRandomInt: function (min, max) {
+    return Math.floor(Math.random() * (max - min + 1) + min);
+  },
   deg2rad: function (deg) {
     return deg * (Math.PI / 180)
   },
