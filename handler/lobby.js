@@ -549,10 +549,10 @@ class LobbyApi extends Handler {
             if (this.serverInfos[serverId].countRooms <= 0) this.serverInfos[serverId].countRooms = 0;
             if (this.serverInfos[serverId].countPlayers <= 0) this.serverInfos[serverId].countPlayers = 0;
           }
+          console.log('deleteRoom ', rid);
+          delete this.rooms[rid]
         }
       }
-      console.log('deleteRoom ', rid);
-      delete this.rooms[rid]
     }
   }
 }
