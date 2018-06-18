@@ -311,7 +311,7 @@ class LobbyApi extends Handler {
           setTimeout((rid, zone) => {
             if (!this.coOpRoom[zone] || this.coOpRoom[zone].rid != rid) return;
             let room = this.rooms[rid];
-            if (!room.isFull() || !room.isEmpty()) {
+            if (room && !room.isFull() && !room.isEmpty()) {
               let bot = getBot(utils.getRandomInt(0, 4));
               this.playerInfos[bot._id] = bot;
               room.joinRoom(bot._id)
@@ -425,7 +425,7 @@ class LobbyApi extends Handler {
         setTimeout((rid, zone) => {
           if (!this.waitRoom[zone] || this.waitRoom[zone].rid != rid) return;
           let room = this.rooms[rid];
-          if (!room.isFull() || !room.isEmpty()) {
+          if (room && !room.isFull() && !room.isEmpty()) {
             let bot = getBot(utils.getRandomInt(0, 4));
             this.playerInfos[bot._id] = bot;
             room.joinRoom(bot._id)
