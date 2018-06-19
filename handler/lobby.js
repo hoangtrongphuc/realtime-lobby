@@ -8,14 +8,52 @@ const Room = require('../logic/room');
 const consts = require('../utils/const');
 const utils = require('../utils/utils');
 const balance = require('../utils/lobbyBalance').balance;
-const random_name = require('node-random-name');
+const faker = require('faker');
 const bots = [
   "B1Spy-4kQ322",
   "BJJoqf4km878",
   "Hkk_FJrJ7048",
   "H1Mte-rJQ057",
   "S1lFb-BkX546"];
-
+const locale = [
+  "az",
+  "cz",
+  "de",
+  "de_AT",
+  "de_CH",
+  "en",
+  "en_AU",
+  "en_BORK",
+  "en_CA",
+  "en_GB",
+  "en_IE",
+  "en_IND",
+  "en_US",
+  "en_au_ocker",
+  "es",
+  "es_MX",
+  "fa",
+  "fr",
+  "fr_CA",
+  "ge",
+  "id_ID",
+  "it",
+  "ja",
+  "ko",
+  "nb_NO",
+  "nep",
+  "nl",
+  "pl",
+  "pt_BR",
+  "ru",
+  "sk",
+  "sv",
+  "tr",
+  "uk",
+  "vi",
+  "zh_CN",
+  "zh_TW",
+]
 const tokens = [
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJCMVNweS00a1EzMjIiLCJhcHBJZCI6IlNrQWdLcldDeiIsInB0SWQiOiJya3NQdHItMHoiLCJpYXQiOjE1MjczMTkwMzEsImV4cCI6MTUyODUyODYzMX0.jDZTcUu_pEoR41AmRgU0bH4scrhKg5ZEYJNl-5pYe7M",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJCSkpvcWY0a204NzgiLCJhcHBJZCI6IlNrQWdLcldDeiIsInB0SWQiOiJya3NQdHItMHoiLCJpYXQiOjE1MjczMTkyMzAsImV4cCI6MTUyODUyODgzMH0.Yp0G6rW9GcikCYvbrPCL4HnS-NH59dKXwz7A5P5DHfI",
@@ -54,11 +92,12 @@ const avatar = [
 ]
 function getBot(idx) {
   let token = tokens[idx]
+  faker.locale = locale[utils.getRandomInt(0, 36)];
   return {
     _id: bots[idx],
     token,
     avatar: avatar[utils.getRandomInt(0, 25)],
-    fullname: random_name({random: Math.random, female: true})
+    fullname: faker.name.findName()
   }
 }
 class LobbyApi extends Handler {
@@ -308,46 +347,47 @@ class LobbyApi extends Handler {
           let rid = uuid();
           this.coOpRoom[zone] = new Room(rid);
           this.rooms[rid] = this.coOpRoom[zone];
-          setTimeout((rid, zone) => {
-            if (!this.coOpRoom[zone] || this.coOpRoom[zone].rid != rid) return;
-            let room = this.rooms[rid];
-            if (room && !room.isFull() && !room.isEmpty()) {
-              let bot = getBot(utils.getRandomInt(0, 4));
-              this.playerInfos[bot._id] = bot;
-              room.joinRoom(bot._id)
-              let serverGame = balance({uid: bot._id}, this.serverInfos)
-              if (serverGame) {
-                room.serverInfo = serverGame
-                let playerInfos = this.createRoom({rid: room.rid, players: room.players})
-                this.connector.send(`${serverGame.serverId}/${consts.EVENT.EVT_CREATE_ROOM}`, {
-                  rid: room.rid,
-                  extra: {
-                    map: zone,
-                    players: room.players,
-                    mode: consts.GAME_MODE.COOP,
-                  }
-                }, (err, roomInfo) => {
-                  let uids = room.uids();
-                  roomInfo = Object.assign(roomInfo, {playerInfos});
-                  roomInfo.bot = true;
-                  roomInfo.token = bot.token;
-                  console.log('RoomInfo', roomInfo)
-                  room.roomInfo = roomInfo;
-                  for (let idx = 0; idx < uids.length; idx++) {
-                    this.connector.broadcast(uids[idx], {
-                      serverInfo: serverGame,
-                      roomInfo: roomInfo
-                    });
-                  }
-                });
-                this.coOpRoom[zone] = null;
-              }
-            }
-          }, 7000, rid, zone)
+
         }
         let coOpRoom = this.coOpRoom[zone]
         this.cancelPlay({uid})
         coOpRoom.joinRoom(uid);
+        setTimeout((rid, zone) => {
+          if (!this.coOpRoom[zone] || this.coOpRoom[zone].rid != rid) return;
+          let room = this.rooms[rid];
+          if (room && room.players.length == 1) {
+            let bot = getBot(utils.getRandomInt(0, 4));
+            this.playerInfos[bot._id] = bot;
+            room.joinRoom(bot._id)
+            let serverGame = balance({uid: bot._id}, this.serverInfos)
+            if (serverGame) {
+              room.serverInfo = serverGame
+              let playerInfos = this.createRoom({rid: room.rid, players: room.players})
+              this.connector.send(`${serverGame.serverId}/${consts.EVENT.EVT_CREATE_ROOM}`, {
+                rid: room.rid,
+                extra: {
+                  map: zone,
+                  players: room.players,
+                  mode: consts.GAME_MODE.COOP,
+                }
+              }, (err, roomInfo) => {
+                let uids = room.uids();
+                roomInfo = Object.assign(roomInfo, {playerInfos});
+                roomInfo.bot = true;
+                roomInfo.token = bot.token;
+                console.log('RoomInfo', roomInfo)
+                room.roomInfo = roomInfo;
+                for (let idx = 0; idx < uids.length; idx++) {
+                  this.connector.broadcast(uids[idx], {
+                    serverInfo: serverGame,
+                    roomInfo: roomInfo
+                  });
+                }
+              });
+              this.coOpRoom[zone] = null;
+            }
+          }
+        }, 7000, coOpRoom.rid, zone)
         console.log('coOpRoom', coOpRoom)
         if (coOpRoom.isFull()) {
           let serverGame = balance(userInfo, this.serverInfos)
@@ -392,7 +432,8 @@ class LobbyApi extends Handler {
     let zone = null;
     if (this.playerInfos[uid]) zone = this.playerInfos[uid].zone;
     if (this.players[uid] || !zone) return
-
+    console.log(this.players[uid], zone)
+    console.log(this.waitRoom[zone] && this.waitRoom[zone].players.indexOf(uid) != -1)
     let timestamp = userInfo.timestamp;
     if (this.waitRoom[zone] && this.waitRoom[zone].players.indexOf(uid) != -1) {
       this.waitRoom[zone].leaveRoom(uid)
@@ -422,46 +463,46 @@ class LobbyApi extends Handler {
         let rid = uuid();
         this.waitRoom[zone] = new Room(rid);
         this.rooms[rid] = this.waitRoom[zone];
-        setTimeout((rid, zone) => {
-          if (!this.waitRoom[zone] || this.waitRoom[zone].rid != rid) return;
-          let room = this.rooms[rid];
-          if (room && !room.isFull() && !room.isEmpty()) {
-            let bot = getBot(utils.getRandomInt(0, 4));
-            this.playerInfos[bot._id] = bot;
-            room.joinRoom(bot._id)
-            let serverGame = balance({uid: bot._id}, this.serverInfos)
-            if (serverGame) {
-              room.serverInfo = serverGame
-              let playerInfos = this.createRoom({rid: room.rid, players: room.players})
-              this.connector.send(`${serverGame.serverId}/${consts.EVENT.EVT_CREATE_ROOM}`, {
-                rid: room.rid,
-                extra: {
-                  map: zone,
-                  players: room.players
-                }
-              }, (err, roomInfo) => {
-                let uids = room.uids();
-                roomInfo = Object.assign(roomInfo, {playerInfos});
-                roomInfo.bot = true;
-                roomInfo.token = bot.token;
-                console.log('RoomInfo', roomInfo)
-                room.roomInfo = roomInfo;
-                for (let idx = 0; idx < uids.length; idx++) {
-                  this.connector.broadcast(uids[idx], {
-                    serverInfo: serverGame,
-                    roomInfo: roomInfo
-                  });
-                }
-              });
-              this.waitRoom[zone] = null;
-            }
-          }
-        }, 7000, rid, zone)
       }
       let waitRoom = this.waitRoom[zone]
       this.cancelPlay({uid})
       waitRoom.joinRoom(uid);
       console.log('waitRoom', waitRoom)
+      setTimeout((rid, zone) => {
+        if (!this.waitRoom[zone] || this.waitRoom[zone].rid != rid) return;
+        let room = this.rooms[rid];
+        if (room && room.players.length == 1) {
+          let bot = getBot(utils.getRandomInt(0, 4));
+          this.playerInfos[bot._id] = bot;
+          room.joinRoom(bot._id)
+          let serverGame = balance({uid: bot._id}, this.serverInfos)
+          if (serverGame) {
+            room.serverInfo = serverGame
+            let playerInfos = this.createRoom({rid: room.rid, players: room.players})
+            this.connector.send(`${serverGame.serverId}/${consts.EVENT.EVT_CREATE_ROOM}`, {
+              rid: room.rid,
+              extra: {
+                map: zone,
+                players: room.players
+              }
+            }, (err, roomInfo) => {
+              let uids = room.uids();
+              roomInfo = Object.assign(roomInfo, {playerInfos});
+              roomInfo.bot = true;
+              roomInfo.token = bot.token;
+              console.log('RoomInfo', roomInfo)
+              room.roomInfo = roomInfo;
+              for (let idx = 0; idx < uids.length; idx++) {
+                this.connector.broadcast(uids[idx], {
+                  serverInfo: serverGame,
+                  roomInfo: roomInfo
+                });
+              }
+            });
+            this.waitRoom[zone] = null;
+          }
+        }
+      }, 7000, waitRoom.rid, zone)
       if (waitRoom.isFull()) {
         let serverGame = balance(userInfo, this.serverInfos)
         if (!serverGame) {
@@ -553,6 +594,7 @@ class LobbyApi extends Handler {
           delete this.rooms[rid]
         }
       }
+
     }
   }
 }
