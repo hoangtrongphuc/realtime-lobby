@@ -17,34 +17,13 @@ const bots = [
   "S1lFb-BkX546"];
 const locale = [
   "az",
-  "cz",
-  "de",
-  "de_AT",
-  "de_CH",
-  "en",
-  "en_AU",
-  "en_BORK",
-  "en_CA",
-  "en_GB",
-  "en_IE",
-  "en_IND",
-  "en_US",
-  "en_au_ocker",
-  "es",
-  "es_MX",
   "fa",
   "fr",
-  "fr_CA",
   "ge",
-  "id_ID",
-  "it",
   "ja",
   "ko",
-  "nb_NO",
   "nep",
-  "nl",
   "pl",
-  "pt_BR",
   "ru",
   "sk",
   "sv",
@@ -89,15 +68,36 @@ const avatar = [
   'https://accdw.gviet.vn/df9.png',
   'https://accdw.gviet.vn/df10.png',
   'https://accdw.gviet.vn/df16.png',
+  'https://accdw.gviet.vn/df17.png',
+  'https://accdw.gviet.vn/df18.png',
+  'https://accdw.gviet.vn/df19.png',
+  'https://accdw.gviet.vn/df20.png',
+  'https://accdw.gviet.vn/df21.png',
+  'https://accdw.gviet.vn/df22.png',
+  'https://accdw.gviet.vn/df23.png',
+  'https://accdw.gviet.vn/df24.png',
+  'https://accdw.gviet.vn/df25.png',
+  'https://accdw.gviet.vn/df26.png',
+  'https://accdw.gviet.vn/df27.png',
+  'https://accdw.gviet.vn/df28.png',
+  'https://accdw.gviet.vn/df29.png',
+  'https://accdw.gviet.vn/df30.png',
+  'https://accdw.gviet.vn/df31.png',
+  'https://accdw.gviet.vn/df32.png',
+  'https://accdw.gviet.vn/df33.png',
+  'https://accdw.gviet.vn/df34.png',
+  'https://accdw.gviet.vn/df35.png',
+  'https://accdw.gviet.vn/df36.png',
+  'https://accdw.gviet.vn/df37.png',
 ]
 function getBot(idx) {
   let token = tokens[idx]
-  faker.locale = locale[utils.getRandomInt(0, 36)];
+  faker.locale = locale[utils.getRandomInt(0, 15)];
   return {
     _id: bots[idx],
     token,
-    avatar: avatar[utils.getRandomInt(0, 25)],
-    fullname: faker.name.findName()
+    avatar: avatar[utils.getRandomInt(0, 46)],
+    fullname: faker.name.lastName()
   }
 }
 class LobbyApi extends Handler {
@@ -177,7 +177,6 @@ class LobbyApi extends Handler {
   }
 
   checkServerIdle(serverInfos, playerInfos, rooms) {
-    console.log('checkServerIdle')
     let serversCount = _.keys(serverInfos).length
     let ccu = _.keys(playerInfos).length;
     let countRooms = _.keys(rooms).length;
@@ -253,8 +252,6 @@ class LobbyApi extends Handler {
     let fid = userInfo.fid;
     let zone = this.playerInfos[uid].zone;
     console.log('playCoop', userInfo, this.playerInfos[fid], this.playerInfos[uid], zone)
-    console.log('lock', this.playerCoOpLock[fid], this.playerCoOpLock[uid])
-
     if (!zone) return utils.invoke(cb, consts.ERROR.PLAYER_INVALID);
     let timestamp = userInfo.timestamp;
 
@@ -432,8 +429,6 @@ class LobbyApi extends Handler {
     let zone = null;
     if (this.playerInfos[uid]) zone = this.playerInfos[uid].zone;
     if (this.players[uid] || !zone) return
-    console.log(this.players[uid], zone)
-    console.log(this.waitRoom[zone] && this.waitRoom[zone].players.indexOf(uid) != -1)
     let timestamp = userInfo.timestamp;
     if (this.waitRoom[zone] && this.waitRoom[zone].players.indexOf(uid) != -1) {
       this.waitRoom[zone].leaveRoom(uid)
@@ -556,9 +551,8 @@ class LobbyApi extends Handler {
       setTimeout(function (uids, rid) {
         console.log('timeOut dis ', uids, rid)
         let uid1 = uids[0], uid2 = uids[1];
-        if (this.players[uid1] == rid) this.leaveGame({uid: uid1})
-        if (this.players[uid2] == rid) this.leaveGame({uid: uid2})
-
+        this.leaveGame({uid: uid1, rid})
+        this.leaveGame({uid: uid2, rid})
       }.bind(this, uids, rid), consts.TIMEOUT_IN_ROOM)
     }
     return playerInfos;
@@ -575,11 +569,10 @@ class LobbyApi extends Handler {
 
   leaveGame(info = {}, cb) {
     let uid = info.uid;
-    console.log(uid, ' leave game!')
-    let rid = this.players[uid]
+    let rid = info.rid;
     if (uid && rid) {
       let room = this.rooms[rid];
-      delete this.players[uid];
+      if (this.players[uid] == rid) delete this.players[uid];
       if (room) {
         room.leaveRoom(uid)
         if (room.players.length == 0) {
